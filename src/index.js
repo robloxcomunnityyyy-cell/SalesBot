@@ -1,5 +1,5 @@
 import 'dotenv/config.js';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, Events, GatewayIntentBits } from 'discord.js';
 import http from 'node:http';
 import { resolve } from 'node:path';
 import { getAllFreeDeals } from './deals.js';
@@ -138,7 +138,7 @@ async function runCheck(label) {
   }
 }
 
-client.once('ready', () => {
+client.once(Events.ClientReady, () => {
   status.loggedIn = true;
   status.botTag = client.user.tag;
   console.log(`Logged in as ${client.user.tag}`);
