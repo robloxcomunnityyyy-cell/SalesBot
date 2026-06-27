@@ -50,6 +50,12 @@ npm run check
 
 ## Render Web Service
 
+You can run this bot 24/7 with render, here is how you can manage that:
+
+search for render's website and sign up
+
+make a new project
+
 Use this if you want to keep the bot alive with an external ping service.
 
 Render settings:
