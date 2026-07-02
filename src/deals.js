@@ -1,6 +1,8 @@
 const STEAM_FEATURED_CATEGORIES_URL = 'https://store.steampowered.com/api/featuredcategories';
 const STEAM_SEARCH_RESULTS_URL = 'https://store.steampowered.com/search/results/';
 const EPIC_FREE_GAMES_URL = 'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions';
+const ITAD_DEALS_URL = 'https://api.isthereanydeal.com/deals/v2';
+const ITAD_EPIC_SHOP_ID = 16;
 const STEAM_SEARCH_PAGE_SIZE = 100;
 const STEAM_SEARCH_MAX_PAGES = 3;
 
@@ -21,6 +23,22 @@ async function fetchJson(url) {
     headers: {
       'accept': 'application/json',
       'user-agent': 'discord-free-games-bot/1.0'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`);
+  }
+
+  return response.json();
+}
+
+async function fetchJsonWithHeaders(url, headers) {
+  const response = await fetch(url, {
+    headers: {
+      accept: 'application/json',
+      'user-agent': 'discord-free-games-bot/1.0',
+      ...headers
     }
   });
 
@@ -259,6 +277,51 @@ export function getExtraEpicFreeDeals({ extraEpicFreeGames = process.env.EPIC_EX
   return parseExtraEpicFreeGames(extraEpicFreeGames);
 }
 
+export async function getItadEpicFreeDeals({
+  country = 'SK',
+  itadApiKey = process.env.ITAD_API_KEY
+} = {}) {
+  if (!itadApiKey) {
+    return [];
+  }
+
+  const url = buildUrl(ITAD_DEALS_URL, {
+    country,
+    limit: 100,
+    sort: '-cut',
+    shops: ITAD_EPIC_SHOP_ID,
+    mature: true,
+    filter: JSON.stringify({
+      cut: {
+        min: 100,
+        max: 100
+      }
+    })
+  });
+
+  const data = await fetchJsonWithHeaders(url, {
+    'ITAD-API-Key': itadApiKey
+  });
+
+  return (data?.list ?? [])
+    .filter((item) => {
+      const deal = item?.deal;
+      return item?.id
+        && item?.title
+        && deal?.shop?.id === ITAD_EPIC_SHOP_ID
+        && deal?.cut === 100
+        && deal?.price?.amountInt === 0;
+    })
+    .map((item) => ({
+      id: `itad-epic:${item.id}`,
+      platform: 'Epic Games',
+      name: item.title,
+      url: item.deal.url,
+      originalPrice: item.deal.regular?.amountInt ?? null,
+      finalPrice: item.deal.price?.amountInt ?? 0
+    }));
+}
+
 export async function getAllFreeDeals(options = {}) {
   const {
     country = 'SK',
@@ -270,6 +333,7 @@ export async function getAllFreeDeals(options = {}) {
   const results = await Promise.allSettled([
     getSteamFreeDeals({ country: steamCountry, locale }),
     getEpicFreeDeals({ country: epicCountry, locale }),
+    getItadEpicFreeDeals({ country: epicCountry, itadApiKey: options.itadApiKey }),
     Promise.resolve(getExtraEpicFreeDeals(options))
   ]);
 
