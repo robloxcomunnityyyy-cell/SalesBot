@@ -50,12 +50,6 @@ npm run check
 
 ## Render Web Service
 
-You can run this bot 24/7 with render, here is how you can manage that:
-
-search for render's website and sign up
-
-make a new project
-
 Use this if you want to keep the bot alive with an external ping service.
 
 Render settings:
@@ -77,6 +71,14 @@ STEAM_COUNTRY=SK
 EPIC_COUNTRY=SK
 LOCALE=sk-SK
 ```
+
+Optional manual Epic promo pages:
+
+```env
+EPIC_EXTRA_FREE_GAMES=Fell in love with coser 5|https://store.epicgames.com/p/fell-in-love-with-coser-5-514e7c
+```
+
+Use this only for Epic games that are visibly `-100%` on their store page but do not appear in Epic's weekly free games API. Separate multiple entries with semicolons.
 
 Render sets `PORT` automatically, so you do not need to add it there.
 
