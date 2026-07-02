@@ -175,6 +175,57 @@ function getEpicUrl(game) {
   return 'https://store.epicgames.com/free-games';
 }
 
+function getEpicSlugFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    const productIndex = parts.indexOf('p');
+
+    if (!parsed.hostname.endsWith('epicgames.com') || productIndex === -1 || !parts[productIndex + 1]) {
+      return null;
+    }
+
+    return parts[productIndex + 1];
+  } catch {
+    return null;
+  }
+}
+
+function nameFromEpicSlug(slug) {
+  return slug
+    .replace(/-[a-f0-9]{6,}$/i, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function parseExtraEpicFreeGames(rawValue = '') {
+  return rawValue
+    .split(/\r?\n|;/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [maybeName, maybeUrl] = entry.includes('|')
+        ? entry.split('|').map((part) => part.trim())
+        : ['', entry];
+      const url = maybeUrl || maybeName;
+      const slug = getEpicSlugFromUrl(url);
+
+      if (!slug) {
+        return null;
+      }
+
+      return {
+        id: `epic-extra:${slug}`,
+        platform: 'Epic Games',
+        name: maybeUrl ? maybeName : nameFromEpicSlug(slug),
+        url,
+        originalPrice: null,
+        finalPrice: 0
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function getEpicFreeDeals({ country = 'SK', locale = 'sk-SK' } = {}) {
   const url = buildUrl(EPIC_FREE_GAMES_URL, {
     locale,
@@ -204,6 +255,10 @@ export async function getEpicFreeDeals({ country = 'SK', locale = 'sk-SK' } = {}
     }));
 }
 
+export function getExtraEpicFreeDeals({ extraEpicFreeGames = process.env.EPIC_EXTRA_FREE_GAMES } = {}) {
+  return parseExtraEpicFreeGames(extraEpicFreeGames);
+}
+
 export async function getAllFreeDeals(options = {}) {
   const {
     country = 'SK',
@@ -214,7 +269,8 @@ export async function getAllFreeDeals(options = {}) {
 
   const results = await Promise.allSettled([
     getSteamFreeDeals({ country: steamCountry, locale }),
-    getEpicFreeDeals({ country: epicCountry, locale })
+    getEpicFreeDeals({ country: epicCountry, locale }),
+    Promise.resolve(getExtraEpicFreeDeals(options))
   ]);
 
   const deals = [];
