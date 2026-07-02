@@ -72,6 +72,14 @@ EPIC_COUNTRY=SK
 LOCALE=sk-SK
 ```
 
+Optional automatic Epic 100% discount source:
+
+```env
+ITAD_API_KEY=your_isthereanydeal_api_key
+```
+
+This enables IsThereAnyDeal's deals API as an extra source for Epic Games Store deals with `100%` discount. Register an app at `https://isthereanydeal.com/apps/` to get a key.
+
 Optional manual Epic promo pages:
 
 ```env
