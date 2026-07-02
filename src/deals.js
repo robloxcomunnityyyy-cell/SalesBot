@@ -62,6 +62,43 @@ function stripHtml(value) {
   return decodeHtml(value.replace(/<[^>]*>/g, '').trim());
 }
 
+function normalizeDealName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function getDealDedupeKey(deal) {
+  return `${deal.platform.toLowerCase()}:${normalizeDealName(deal.name)}`;
+}
+
+function withDedupeKey(deal) {
+  return {
+    ...deal,
+    dedupeKey: getDealDedupeKey(deal)
+  };
+}
+
+function isDirectStoreUrl(url) {
+  return /store\.steampowered\.com|store\.epicgames\.com/i.test(url);
+}
+
+function mergeDeals(deals) {
+  const merged = new Map();
+
+  for (const deal of deals.map(withDedupeKey)) {
+    const existing = merged.get(deal.dedupeKey);
+
+    if (!existing || (!isDirectStoreUrl(existing.url) && isDirectStoreUrl(deal.url))) {
+      merged.set(deal.dedupeKey, deal);
+    }
+  }
+
+  return [...merged.values()];
+}
+
 function parseSteamSearchResults(html) {
   const rows = html.match(/<a\b[^>]*class="[^"]*\bsearch_result_row\b[^"]*"[\s\S]*?<\/a>/g) ?? [];
 
@@ -167,7 +204,7 @@ export async function getSteamFreeDeals(options = {}) {
     console.warn(error);
   }
 
-  return [...deals.values()];
+  return mergeDeals([...deals.values()]);
 }
 
 function isActivePromotion(offer, now = new Date()) {
@@ -348,5 +385,5 @@ export async function getAllFreeDeals(options = {}) {
     }
   }
 
-  return { deals, errors };
+  return { deals: mergeDeals(deals), errors };
 }

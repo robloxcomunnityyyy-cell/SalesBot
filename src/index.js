@@ -110,7 +110,7 @@ async function checkAndAnnounce() {
     console.warn(error);
   }
 
-  const newDeals = deals.filter((deal) => !notified.has(deal.id));
+  const newDeals = deals.filter((deal) => !notified.has(deal.id) && !notified.has(deal.dedupeKey));
   status.lastNewDealCount = newDeals.length;
 
   if (newDeals.length === 0) {
@@ -122,6 +122,7 @@ async function checkAndAnnounce() {
   for (const deal of newDeals) {
     await announceDeal(channel, deal);
     notified.add(deal.id);
+    notified.add(deal.dedupeKey);
     console.log(`[${new Date().toISOString()}] Announced ${deal.platform}: ${deal.name}`);
   }
 
